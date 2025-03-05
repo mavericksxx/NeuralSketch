@@ -7,11 +7,20 @@ import io
 from transformers import EfficientNetForImageClassification, AutoImageProcessor
 import os
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Load the model and processor
-MODEL_PATH = "../model"  # Path relative to where app.py is located
+# Load the model and processor - Using absolute path
+MODEL_PATH = "/Users/maverick/Developer/FDS-project/quickdraw-recognition/model"
+logger.debug(f"Model path is set to: {MODEL_PATH}")
+logger.debug(f"Model directory exists: {os.path.exists(MODEL_PATH)}")
+if os.path.exists(MODEL_PATH):
+    logger.debug(f"Model directory contents: {os.listdir(MODEL_PATH)}")
 
 # Initialize Stable Diffusion ControlNet
 def init_controlnet():
@@ -75,6 +84,7 @@ def predict():
         
         # Load model and processor if we have a trained model
         if not os.path.exists(MODEL_PATH):
+            logger.error(f"Model directory not found at: {MODEL_PATH}")
             return jsonify({
                 'error': 'Model not found. Please train the model first.',
                 'top_predictions': [
@@ -83,8 +93,15 @@ def predict():
                 ]
             })
         
-        processor = AutoImageProcessor.from_pretrained(MODEL_PATH)
-        model = EfficientNetForImageClassification.from_pretrained(MODEL_PATH)
+        logger.debug("Loading model and processor...")
+        try:
+            processor = AutoImageProcessor.from_pretrained(MODEL_PATH)
+            logger.debug("Processor loaded successfully")
+            model = EfficientNetForImageClassification.from_pretrained(MODEL_PATH)
+            logger.debug("Model loaded successfully")
+        except Exception as e:
+            logger.error(f"Error loading model or processor: {str(e)}")
+            raise
         
         # Set model to evaluation mode
         model.eval()
@@ -118,7 +135,7 @@ def predict():
         return jsonify({'top_predictions': top_predictions})
     
     except Exception as e:
-        print(f"Error in prediction: {str(e)}")
+        logger.error(f"Error in prediction: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/refine', methods=['POST'])
@@ -138,7 +155,7 @@ def refine_artwork():
         sketch = image.convert("L").resize((512, 512))
         
         # Get the prompt (either from request or use default)
-        prompt = request.json.get('prompt', 'a refined digital painting of this sketch')
+        prompt = request.json.get('prompt', 'a refined digital painting of this sketch, with a white background')
         
         # Generate refined artwork
         with torch.inference_mode():
