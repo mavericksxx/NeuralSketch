@@ -199,9 +199,16 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Check if CUDA is available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
+    # Check for available devices (CUDA, MPS, or CPU)
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")
+        print("Using Apple Silicon GPU (MPS)")
+    elif torch.cuda.is_available():
+        device = torch.device("cuda")
+        print("Using NVIDIA GPU (CUDA)")
+    else:
+        device = torch.device("cpu")
+        print("Using CPU")
     
     # Get class names
     class_names = get_class_names(os.path.join(args.data_dir, "train"))
