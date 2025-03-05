@@ -82,6 +82,9 @@ def predict():
         # Get the image data
         image = process_base64_image(request.json['image'])
         
+        # Convert to RGB and resize to match training dimensions (224x224)
+        image = image.convert('RGB').resize((224, 224))
+        
         # Load model and processor if we have a trained model
         if not os.path.exists(MODEL_PATH):
             logger.error(f"Model directory not found at: {MODEL_PATH}")
@@ -99,6 +102,13 @@ def predict():
             logger.debug("Processor loaded successfully")
             model = EfficientNetForImageClassification.from_pretrained(MODEL_PATH)
             logger.debug("Model loaded successfully")
+            
+            # Move model to appropriate device
+            if torch.backends.mps.is_available():
+                model = model.to("mps")
+            elif torch.cuda.is_available():
+                model = model.to("cuda")
+            
         except Exception as e:
             logger.error(f"Error loading model or processor: {str(e)}")
             raise
@@ -108,6 +118,12 @@ def predict():
         
         # Process the image
         inputs = processor(images=image, return_tensors="pt")
+        
+        # Move inputs to the same device as model
+        if torch.backends.mps.is_available():
+            inputs = {k: v.to("mps") for k, v in inputs.items()}
+        elif torch.cuda.is_available():
+            inputs = {k: v.to("cuda") for k, v in inputs.items()}
         
         with torch.no_grad():
             outputs = model(**inputs)
@@ -123,8 +139,8 @@ def predict():
         top5_prob, top5_indices = torch.topk(probabilities, 5)
         
         # Convert to Python lists
-        top5_prob = top5_prob.tolist()
-        top5_indices = top5_indices.tolist()
+        top5_prob = top5_prob.cpu().tolist()
+        top5_indices = top5_indices.cpu().tolist()
         
         # Create prediction list
         top_predictions = [
