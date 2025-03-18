@@ -3,356 +3,462 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickDraw Recognition</title>
+    <title>NeuralSketch - Artwork Refinement</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #7843E6;
+            --secondary-color: #FF6B6B;
+            --accent-color: #43E6D5;
+            --bg-color: #FAFAFA;
+            --text-color: #2C3E50;
+        }
+
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Poppins', sans-serif;
             line-height: 1.6;
             margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-            color: #333;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(120, 67, 230, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(67, 230, 213, 0.05) 0%, transparent 50%);
+            min-height: 100vh;
+        }
+
+        .page-wrapper {
             max-width: 1200px;
             margin: 0 auto;
+            padding: 40px 20px;
         }
+
         h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
             text-align: center;
             margin-bottom: 30px;
-            color: #2c3e50;
+            color: var(--primary-color);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            position: relative;
         }
+
+        h1::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+            margin: 15px auto;
+            border-radius: 2px;
+        }
+
+        .instructions {
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--text-color);
+            max-width: 800px;
+            margin: 0 auto 40px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+        }
+
         .container {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 30px;
-            margin-bottom: 30px;
+            gap: 40px;
+            margin-bottom: 40px;
         }
+
         .canvas-container {
             display: flex;
             flex-direction: column;
             align-items: center;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
         }
+
+        .canvas-container:hover {
+            transform: translateY(-5px);
+        }
+
         canvas {
             background-color: white;
-            border: 2px solid #3498db;
-            border-radius: 10px;
+            border: 3px solid var(--accent-color);
+            border-radius: 15px;
             cursor: crosshair;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
+
         .controls {
             display: flex;
-            gap: 10px;
+            gap: 15px;
             margin-bottom: 20px;
         }
+
         button {
-            background-color: #3498db;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 25px;
             font-size: 16px;
-            border-radius: 5px;
+            border-radius: 30px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
+
         button:hover {
-            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
-        .prediction-container {
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+        .prediction-container, .refined-artwork {
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
             min-width: 300px;
+            transition: transform 0.3s ease;
         }
+
+        .prediction-container:hover, .refined-artwork:hover {
+            transform: translateY(-5px);
+        }
+
         .prediction-item {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         }
-        .prediction-item:last-child {
-            border-bottom: none;
-        }
+
         .confidence-bar {
-            height: 10px;
-            background-color: #3498db;
-            margin-top: 5px;
-            border-radius: 5px;
+            height: 8px;
+            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+            margin-top: 8px;
+            border-radius: 10px;
+            transition: width 0.6s ease-out;
         }
-        .instructions {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #555;
-        }
+
         .loading {
             display: none;
             text-align: center;
             margin: 20px 0;
         }
+
         .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
+            border: 4px solid rgba(120, 67, 230, 0.1);
             border-radius: 50%;
-            border-top: 4px solid #3498db;
-            width: 30px;
-            height: 30px;
+            border-top: 4px solid var(--primary-color);
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            margin: 0 auto 15px;
         }
+
+        .prompt-input {
+            width: 100%;
+            padding: 15px;
+            margin: 15px 0;
+            border: 2px solid var(--accent-color);
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .prompt-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(120, 67, 230, 0.2);
+        }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .refined-artwork {
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
+
+        h2 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.8rem;
         }
-        .refined-artwork img {
-            max-width: 512px;
-            border-radius: 5px;
-            margin: 10px 0;
+
+        #refinedImage {
+            max-width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease;
         }
-        .prompt-input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
+
+        #refinedImage:hover {
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .canvas-container, .prediction-container, .refined-artwork {
+                width: 90%;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>QuickDraw Recognition</h1>
-    
-    <div class="instructions">
-        <p>Draw a simple object on the canvas below, and the AI will try to recognize it.</p>
-        <p>Try drawing categories like: cat, dog, car, apple, airplane, banana, house, flower, tree, umbrella</p>
-        <p>Click "Refine Artwork" to transform your sketch into a polished digital painting!</p>
-    </div>
-    
-    <div class="container">
-        <div class="canvas-container">
-            <canvas id="drawingCanvas" width="400" height="400"></canvas>
-            <div class="controls">
-                <button id="clearButton">Clear Canvas</button>
-                <button id="recognizeButton">Recognize Drawing</button>
-                <button id="refineButton">Refine Artwork</button>
-            </div>
+    <div class="page-wrapper">
+        <h1>NeuralSketch Alpha</h1>
+        
+        <div class="instructions">
+            <p>🎨</p>
+            <p>Draw something from these categories: cat, dog, car, airplane, banana, house, flower, tree, umbrella</p>
+            <p>✨ Click "Refine Artwork" to transform your sketch into a digital painting! ✨</p>
         </div>
         
-        <div class="prediction-container">
-            <h2>Predictions</h2>
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Analyzing your drawing...</p>
+        <div class="container">
+            <div class="canvas-container">
+                <canvas id="drawingCanvas" width="400" height="400"></canvas>
+                <input type="text" class="prompt-input" id="promptInput" placeholder="Enter a prompt to guide the artwork refinement (optional)">
+                <div class="controls">
+                    <button id="clearButton">Clear Canvas</button>
+                    <button id="recognizeButton">Recognize Drawing</button>
+                    <button id="refineButton">Refine Artwork</button>
+                </div>
             </div>
-            <div id="predictions">
-                <p>Draw something and click "Recognize Drawing" to see predictions.</p>
+            
+            <div class="prediction-container">
+                <h2>Predictions</h2>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing your drawing...</p>
+                </div>
+                <div id="predictions">
+                    <p>Draw something and click "Recognize Drawing" to see predictions.</p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="container">
-        <div class="refined-artwork" id="refinedArtwork" style="display: none;">
-            <h2>Refined Artwork</h2>
-            <div class="loading" id="refineLoading">
-                <div class="spinner"></div>
-                <p>Generating refined artwork...</p>
+        <div class="container">
+            <div class="refined-artwork" id="refinedArtwork" style="display: none;">
+                <h2>Refined Artwork</h2>
+                <div class="loading" id="refineLoading">
+                    <div class="spinner"></div>
+                    <p>Generating refined artwork...</p>
+                </div>
+                <img id="refinedImage" style="display: none;">
             </div>
-            <input type="text" class="prompt-input" id="promptInput" placeholder="Enter a prompt to guide the artwork refinement (optional)">
-            <img id="refinedImage" style="display: none;">
         </div>
-    </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const canvas = document.getElementById('drawingCanvas');
-            const ctx = canvas.getContext('2d');
-            const clearButton = document.getElementById('clearButton');
-            const recognizeButton = document.getElementById('recognizeButton');
-            const predictionsDiv = document.getElementById('predictions');
-            const loadingDiv = document.getElementById('loading');
-            const refineButton = document.getElementById('refineButton');
-            const refinedArtwork = document.getElementById('refinedArtwork');
-            const refinedImage = document.getElementById('refinedImage');
-            const refineLoading = document.getElementById('refineLoading');
-            const promptInput = document.getElementById('promptInput');
-            
-            let isDrawing = false;
-            
-            // Canvas setup
-            ctx.lineWidth = 15;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = 'black';
-            
-            // Set white background for the canvas
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Drawing event listeners
-            canvas.addEventListener('mousedown', startDrawing);
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing);
-            
-            // Touch support
-            canvas.addEventListener('touchstart', handleTouch);
-            canvas.addEventListener('touchmove', handleTouch);
-            canvas.addEventListener('touchend', stopDrawing);
-            
-            // Button event listeners
-            clearButton.addEventListener('click', clearCanvas);
-            recognizeButton.addEventListener('click', recognizeDrawing);
-            refineButton.addEventListener('click', refineArtwork);
-            
-            function startDrawing(e) {
-                isDrawing = true;
-                draw(e);
-            }
-            
-            function draw(e) {
-                if (!isDrawing) return;
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const canvas = document.getElementById('drawingCanvas');
+                const ctx = canvas.getContext('2d');
+                const clearButton = document.getElementById('clearButton');
+                const recognizeButton = document.getElementById('recognizeButton');
+                const predictionsDiv = document.getElementById('predictions');
+                const loadingDiv = document.getElementById('loading');
+                const refineButton = document.getElementById('refineButton');
+                const refinedArtwork = document.getElementById('refinedArtwork');
+                const refinedImage = document.getElementById('refinedImage');
+                const refineLoading = document.getElementById('refineLoading');
+                const promptInput = document.getElementById('promptInput');
                 
-                // Get mouse/touch position
-                const x = e.clientX - canvas.getBoundingClientRect().left;
-                const y = e.clientY - canvas.getBoundingClientRect().top;
+                let isDrawing = false;
                 
-                ctx.lineTo(x, y);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-            }
-            
-            function stopDrawing() {
-                isDrawing = false;
-                ctx.beginPath();
-            }
-            
-            function handleTouch(e) {
-                e.preventDefault();
-                if (e.type === 'touchstart') {
-                    isDrawing = true;
-                }
+                // Canvas setup
+                ctx.lineWidth = 15;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = 'black';
                 
-                if (isDrawing) {
-                    const touch = e.touches[0];
-                    const x = touch.clientX - canvas.getBoundingClientRect().left;
-                    const y = touch.clientY - canvas.getBoundingClientRect().top;
-                    
-                    if (e.type === 'touchstart') {
-                        ctx.beginPath();
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.moveTo(x, y);
-                    }
-                }
-            }
-            
-            function clearCanvas() {
+                // Set white background for the canvas
                 ctx.fillStyle = 'white';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                predictionsDiv.innerHTML = '<p>Draw something and click "Recognize Drawing" to see predictions.</p>';
-            }
-            
-            function recognizeDrawing() {
-                // Show loading indicator
-                loadingDiv.style.display = 'block';
-                predictionsDiv.style.display = 'none';
                 
-                // Get the canvas image as data URL
-                const imageData = canvas.toDataURL('image/png');
+                // Drawing event listeners
+                canvas.addEventListener('mousedown', startDrawing);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDrawing);
+                canvas.addEventListener('mouseout', stopDrawing);
                 
-                // Send to server for prediction
-                fetch('/predict', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ image: imageData })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Hide loading indicator
-                    loadingDiv.style.display = 'none';
-                    predictionsDiv.style.display = 'block';
+                // Touch support
+                canvas.addEventListener('touchstart', handleTouch);
+                canvas.addEventListener('touchmove', handleTouch);
+                canvas.addEventListener('touchend', stopDrawing);
+                
+                // Button event listeners
+                clearButton.addEventListener('click', clearCanvas);
+                recognizeButton.addEventListener('click', recognizeDrawing);
+                refineButton.addEventListener('click', refineArtwork);
+                
+                function startDrawing(e) {
+                    isDrawing = true;
+                    draw(e);
+                }
+                
+                function draw(e) {
+                    if (!isDrawing) return;
                     
-                    if (data.error) {
-                        predictionsDiv.innerHTML = `<p>Error: ${data.error}</p>`;
-                        return;
+                    // Get mouse/touch position
+                    const x = e.clientX - canvas.getBoundingClientRect().left;
+                    const y = e.clientY - canvas.getBoundingClientRect().top;
+                    
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                }
+                
+                function stopDrawing() {
+                    isDrawing = false;
+                    ctx.beginPath();
+                }
+                
+                function handleTouch(e) {
+                    e.preventDefault();
+                    if (e.type === 'touchstart') {
+                        isDrawing = true;
                     }
                     
-                    // Display predictions
-                    let html = '';
-                    
-                    data.top_predictions.forEach(pred => {
-                        const percentage = (pred.confidence * 100).toFixed(2);
-                        html += `
-                            <div class="prediction-item">
-                                <div>
-                                    <strong>${pred.class}</strong>
-                                    <div class="confidence-bar" style="width: ${percentage}%"></div>
-                                </div>
-                                <div>${percentage}%</div>
-                            </div>
-                        `;
-                    });
-                    
-                    predictionsDiv.innerHTML = html;
-                })
-                .catch(error => {
-                    loadingDiv.style.display = 'none';
-                    predictionsDiv.style.display = 'block';
-                    predictionsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
-                });
-            }
-
-            function refineArtwork() {
-                // Show the refined artwork section and loading indicator
-                refinedArtwork.style.display = 'block';
-                refineLoading.style.display = 'block';
-                refinedImage.style.display = 'none';
+                    if (isDrawing) {
+                        const touch = e.touches[0];
+                        const x = touch.clientX - canvas.getBoundingClientRect().left;
+                        const y = touch.clientY - canvas.getBoundingClientRect().top;
+                        
+                        if (e.type === 'touchstart') {
+                            ctx.beginPath();
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                            ctx.stroke();
+                            ctx.beginPath();
+                            ctx.moveTo(x, y);
+                        }
+                    }
+                }
                 
-                // Get the canvas image data
-                const imageData = canvas.toDataURL('image/png');
+                function clearCanvas() {
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    predictionsDiv.innerHTML = '<p>Draw something and click "Recognize Drawing" to see predictions.</p>';
+                }
                 
-                // Send to server for refinement
-                fetch('/refine', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        image: imageData,
-                        prompt: promptInput.value || undefined  // Only send if not empty
+                function recognizeDrawing() {
+                    // Show loading indicator
+                    loadingDiv.style.display = 'block';
+                    predictionsDiv.style.display = 'none';
+                    
+                    // Get the canvas image as data URL
+                    const imageData = canvas.toDataURL('image/png');
+                    
+                    // Send to server for prediction
+                    fetch('/predict', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ image: imageData })
                     })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Hide loading indicator
-                    refineLoading.style.display = 'none';
+                    .then(response => response.json())
+                    .then(data => {
+                        // Hide loading indicator
+                        loadingDiv.style.display = 'none';
+                        predictionsDiv.style.display = 'block';
+                        
+                        if (data.error) {
+                            predictionsDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                            return;
+                        }
+                        
+                        // Display predictions
+                        let html = '';
+                        
+                        data.top_predictions.forEach(pred => {
+                            const percentage = (pred.confidence * 100).toFixed(2);
+                            html += `
+                                <div class="prediction-item">
+                                    <div>
+                                        <strong>${pred.class}</strong>
+                                        <div class="confidence-bar" style="width: ${percentage}%"></div>
+                                    </div>
+                                    <div>${percentage}%</div>
+                                </div>
+                            `;
+                        });
+                        
+                        predictionsDiv.innerHTML = html;
+                    })
+                    .catch(error => {
+                        loadingDiv.style.display = 'none';
+                        predictionsDiv.style.display = 'block';
+                        predictionsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+                    });
+                }
+
+                function refineArtwork() {
+                    // Show the refined artwork section and loading indicator
+                    refinedArtwork.style.display = 'block';
+                    refineLoading.style.display = 'block';
+                    refinedImage.style.display = 'none';
                     
-                    if (data.error) {
-                        refinedArtwork.innerHTML = `<p>Error: ${data.error}</p>`;
-                        return;
-                    }
+                    // Get the canvas image data
+                    const imageData = canvas.toDataURL('image/png');
                     
-                    // Display the refined artwork
-                    refinedImage.src = data.refined_image;
-                    refinedImage.style.display = 'block';
-                })
-                .catch(error => {
-                    refineLoading.style.display = 'none';
-                    refinedArtwork.innerHTML = `<p>Error: ${error.message}</p>`;
-                });
-            }
-        });
-    </script>
+                    // Send to server for refinement
+                    fetch('/refine', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ 
+                            image: imageData,
+                            prompt: promptInput.value || undefined  // Only send if not empty
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Hide loading indicator
+                        refineLoading.style.display = 'none';
+                        
+                        if (data.error) {
+                            refinedArtwork.innerHTML = `<p>Error: ${data.error}</p>`;
+                            return;
+                        }
+                        
+                        // Display the refined artwork
+                        refinedImage.src = data.refined_image;
+                        refinedImage.style.display = 'block';
+                    })
+                    .catch(error => {
+                        refineLoading.style.display = 'none';
+                        refinedArtwork.innerHTML = `<p>Error: ${error.message}</p>`;
+                    });
+                }
+            });
+        </script>
+    </div>
 </body>
 </html>
