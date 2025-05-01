@@ -60,6 +60,12 @@ def train_model(model, train_loader, val_loader, device, num_epochs=5, learning_
     train_accuracies = []
     val_accuracies = []
     
+    # For early stopping and model saving
+    best_val_loss = float('inf')
+    best_model_state = None
+    patience = 3
+    patience_counter = 0
+    
     # Training loop
     for epoch in range(num_epochs):
         # Training phase
@@ -121,6 +127,23 @@ def train_model(model, train_loader, val_loader, device, num_epochs=5, learning_
         print(f"Epoch {epoch+1}/{num_epochs} - "
               f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, "
               f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
+        
+        # Save best model
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_model_state = model.state_dict().copy()
+            patience_counter = 0
+            print(f"New best model saved! (Val Loss: {val_loss:.4f})")
+        else:
+            patience_counter += 1
+            if patience_counter >= patience:
+                print(f"\nEarly stopping triggered after {epoch + 1} epochs!")
+                break
+    
+    # Load best model state
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+        print(f"\nLoaded best model with validation loss: {best_val_loss:.4f}")
     
     # Plot training curves
     plt.figure(figsize=(12, 5))

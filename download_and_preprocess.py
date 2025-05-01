@@ -8,8 +8,7 @@ from tqdm import tqdm
 import argparse
 
 # Categories to download
-DEFAULT_CATEGORIES = ['cat', 'dog', 'car', 'book', 'airplane', 'banana', 'house', 'flower', 'tree', 'umbrella', 'arm', 'cake', 'cloud', 'leaf']
-
+DEFAULT_CATEGORIES = ["cloud", "airplane", "butterfly", "door", "clock", "moon", "star", "mushroom", "light bulb", "flower"]
 def download_data(categories, data_dir="quickdraw_data"):
     """
     Download the QuickDraw numpy bitmap data for the given categories

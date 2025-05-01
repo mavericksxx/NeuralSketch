@@ -1,0 +1,14 @@
+airplane
+banana
+butterfly
+clock
+cloud
+door
+flower
+house
+leaf
+light bulb
+moon
+mushroom
+star
+tree
