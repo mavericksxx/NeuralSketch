@@ -2,9 +2,6 @@
 quickdraw_data/
 quickdraw_images/
 
-# Model directory
-model/
-
 # Python
 __pycache__/
 *.py[cod]
