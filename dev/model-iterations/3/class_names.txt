@@ -1,0 +1,86 @@
+airplane
+apple
+asparagus
+axe
+banana
+bat
+bear
+beard
+bee
+bicycle
+binoculars
+birthday cake
+bottlecap
+broom
+bucket
+bus
+butterfly
+ceiling fan
+cell phone
+church
+clarinet
+clock
+cloud
+computer
+crayon
+crocodile
+diamond
+dishwasher
+diving board
+door
+dumbbell
+eye
+fan
+flower
+foot
+goatee
+grass
+harp
+hockey stick
+house
+jail
+kangaroo
+leaf
+light bulb
+lighter
+lollipop
+mailbox
+marker
+matches
+monkey
+moon
+mosquito
+mushroom
+octagon
+onion
+passport
+piano
+pickup truck
+pool
+postcard
+remote control
+rhinoceros
+river
+rollerskates
+sailboat
+saw
+shark
+shoe
+sink
+skateboard
+snake
+sock
+star
+stop sign
+string bean
+submarine
+t-shirt
+toilet
+tooth
+toothbrush
+train
+tree
+triangle
+wheel
+wine glass
+yoga

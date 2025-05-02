@@ -1,37 +1,104 @@
 from flask import Flask, render_template, request, jsonify
 import torch
+import torch.nn as nn
 import base64
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 import io
-from transformers import EfficientNetForImageClassification, AutoImageProcessor
 import os
-from diffusers import StableDiffusionControlNetPipeline, ControlNetModel
 import logging
+import sys
+import cv2
+from diffusers import StableDiffusionControlNetPipeline, ControlNetModel
+import torch.serialization
 
-# Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+WHITE_RGB = (255, 255, 255)
+CLASSES = ["apple", "book", "bowtie", "candle", "cloud", "cup", "door", "envelope", "eyeglasses", "guitar", "hammer",
+           "hat", "ice cream", "leaf", "scissors", "star", "t-shirt", "pants", "lightning", "tree"]
+
 app = Flask(__name__)
 
-# Load the model and processor - Using absolute path
-MODEL_PATH = "/Users/maverick/Developer/FDS-project/quickdraw-recognition/model"
-logger.debug(f"Model path is set to: {MODEL_PATH}")
-logger.debug(f"Model directory exists: {os.path.exists(MODEL_PATH)}")
-if os.path.exists(MODEL_PATH):
-    logger.debug(f"Model directory contents: {os.listdir(MODEL_PATH)}")
+class QuickDraw(nn.Module):
+    def __init__(self, input_size=28, num_classes=20):
+        super(QuickDraw, self).__init__()
+        self.num_classes = num_classes
+        self.conv1 = nn.Sequential(nn.Conv2d(1, 32, 5, bias=False), nn.ReLU(inplace=True), nn.MaxPool2d(2,2))
+        self.conv2 = nn.Sequential(nn.Conv2d(32, 64, 5, bias=False), nn.ReLU(inplace=True), nn.MaxPool2d(2, 2))
+        dimension = int(64 * pow(input_size/4 - 3, 2))
+        self.fc1 = nn.Sequential(nn.Linear(dimension, 512), nn.Dropout(0.5))
+        self.fc2 = nn.Sequential(nn.Linear(512, 128), nn.Dropout(0.5))
+        self.fc3 = nn.Sequential(nn.Linear(128, num_classes))
 
-# Initialize Stable Diffusion ControlNet
+    def forward(self, input):
+        output = self.conv1(input)
+        output = self.conv2(output)
+        output = output.view(output.size(0), -1)
+        output = self.fc1(output)
+        output = self.fc2(output)
+        output = self.fc3(output)
+        return output
+
+def process_image_for_model(image_data):
+
+    nparr = np.frombuffer(base64.b64decode(image_data.split(',')[1]), np.uint8)
+    image = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+    
+
+    ys, xs = np.nonzero(image)
+    if len(ys) == 0 or len(xs) == 0:  # Empty image
+        return None
+        
+    min_y, max_y = np.min(ys), np.max(ys)
+    min_x, max_x = np.min(xs), np.max(xs)
+    image = image[min_y:max_y + 1, min_x:max_x + 1]
+
+    image = cv2.resize(image, (28, 28))
+    
+
+    image = np.array(image, dtype=np.float32)
+    image = image[None, None, :, :]  
+    image = torch.from_numpy(image)
+    return image
+
+
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "model", "whole_model_quickdraw")
+
+def load_quickdraw_model():
+    try:
+        torch.serialization.add_safe_globals(['QuickDraw'])
+        
+        model = QuickDraw(num_classes=20)
+
+        # i know both the statements are the same, but for some reason the model wouldnt load without having an else CPU statement 
+        # even though im loading it onto the gpu ...
+        
+        if torch.cuda.is_available():
+            state_dict = torch.load(MODEL_PATH, map_location='cuda:0', weights_only=False)
+        else:
+            state_dict = torch.load(MODEL_PATH, map_location='cpu', weights_only=False)
+        
+        if isinstance(state_dict, nn.Module):
+            model = state_dict
+        else:
+            model.load_state_dict(state_dict)
+            
+        model.eval()
+        return model
+    except Exception as e:
+        logger.error(f"Error loading model: {str(e)}")
+        raise
+
 def init_controlnet():
     controlnet = ControlNetModel.from_pretrained("lllyasviel/control_v11p_sd15_scribble")
     pipe = StableDiffusionControlNetPipeline.from_pretrained(
         "runwayml/stable-diffusion-v1-5", 
         controlnet=controlnet,
-        safety_checker=None  # Disable safety checker for faster inference
+        safety_checker=None 
     )
     
-    # Proper device handling for Apple Silicon
     if torch.backends.mps.is_available():
         pipe = pipe.to("mps")
     elif torch.cuda.is_available():
@@ -41,7 +108,6 @@ def init_controlnet():
         
     return pipe
 
-# Initialize ControlNet when the app starts
 try:
     controlnet_pipe = init_controlnet()
     print("ControlNet initialized successfully")
@@ -49,22 +115,11 @@ except Exception as e:
     print(f"Error initializing ControlNet: {str(e)}")
     controlnet_pipe = None
 
-# Check if the model exists, if not provide instructions
-if not os.path.exists(MODEL_PATH):
-    print("=" * 80)
-    print("Model not found. Please train the model first using these commands:")
-    print("cd /Users/maverick/Developer/FDS-project/quickdraw-recognition")
-    print("python download_and_preprocess.py")
-    print("python train_model.py --num_epochs 5")
-    print("=" * 80)
-
 def process_base64_image(base64_string):
-    """Convert base64 image data to PIL Image"""
     image_data = base64.b64decode(base64_string.split(',')[1])
     return Image.open(io.BytesIO(image_data))
 
 def image_to_base64(image):
-    """Convert PIL Image to base64 string"""
     buffered = io.BytesIO()
     image.save(buffered, format="PNG")
     return f"data:image/png;base64,{base64.b64encode(buffered.getvalue()).decode()}"
@@ -79,72 +134,32 @@ def predict():
         return jsonify({'error': 'No image provided'}), 400
     
     try:
-        # Get the image data
-        image = process_base64_image(request.json['image'])
+        image_tensor = process_image_for_model(request.json['image'])
+        if image_tensor is None:
+            return jsonify({'error': 'Empty image provided'}), 400
         
-        # Convert to RGB and resize to match training dimensions (224x224)
-        image = image.convert('RGB').resize((224, 224))
-        
-        # Load model and processor if we have a trained model
-        if not os.path.exists(MODEL_PATH):
-            logger.error(f"Model directory not found at: {MODEL_PATH}")
-            return jsonify({
-                'error': 'Model not found. Please train the model first.',
-                'top_predictions': [
-                    {'class': 'Example class 1', 'confidence': 0.5},
-                    {'class': 'Example class 2', 'confidence': 0.3},
-                ]
-            })
-        
-        logger.debug("Loading model and processor...")
+        logger.debug("Loading QuickDraw model...")
         try:
-            processor = AutoImageProcessor.from_pretrained(MODEL_PATH)
-            logger.debug("Processor loaded successfully")
-            model = EfficientNetForImageClassification.from_pretrained(MODEL_PATH)
+            model = load_quickdraw_model()
+            if torch.cuda.is_available():
+                image_tensor = image_tensor.cuda()
             logger.debug("Model loaded successfully")
-            
-            # Move model to appropriate device
-            if torch.backends.mps.is_available():
-                model = model.to("mps")
-            elif torch.cuda.is_available():
-                model = model.to("cuda")
-            
         except Exception as e:
-            logger.error(f"Error loading model or processor: {str(e)}")
-            raise
-        
-        # Set model to evaluation mode
-        model.eval()
-        
-        # Process the image
-        inputs = processor(images=image, return_tensors="pt")
-        
-        # Move inputs to the same device as model
-        if torch.backends.mps.is_available():
-            inputs = {k: v.to("mps") for k, v in inputs.items()}
-        elif torch.cuda.is_available():
-            inputs = {k: v.to("cuda") for k, v in inputs.items()}
+            logger.error(f"Error loading model: {str(e)}")
+            return jsonify({'error': str(e)}), 500
         
         with torch.no_grad():
-            outputs = model(**inputs)
+            outputs = model(image_tensor)
         
-        # Get predictions
-        probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)[0]
+        probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
         
-        # Load class names
-        with open(os.path.join(MODEL_PATH, "class_names.txt"), "r") as f:
-            class_names = [line.strip() for line in f.readlines()]
-        
-        # Get top 5 predictions
         top5_prob, top5_indices = torch.topk(probabilities, 5)
         
-        # Convert to Python lists
         top5_prob = top5_prob.cpu().tolist()
         top5_indices = top5_indices.cpu().tolist()
         
-        # Create prediction list
         top_predictions = [
-            {'class': class_names[idx], 'confidence': float(prob)}
+            {'class': CLASSES[idx], 'confidence': float(prob)}
             for idx, prob in zip(top5_indices, top5_prob)
         ]
         
@@ -160,20 +175,23 @@ def refine_artwork():
         return jsonify({'error': 'No image provided'}), 400
     
     try:
-        # Check if ControlNet is initialized
         if controlnet_pipe is None:
             return jsonify({'error': 'ControlNet not initialized'}), 500
 
-        # Get the image and process it
         image = process_base64_image(request.json['image'])
         
-        # Convert to grayscale and resize for ControlNet
         sketch = image.convert("L").resize((512, 512))
         
-        # Get the prompt (either from request or use default)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # TO-DO:
+        # HERE IS THE DEFAULT SYSTEM PROMPT FED TO THE CONTROLNET PIPELINE
+        # THIS CAN BE CHANGED BY THE USER IN THE FRONTEND
+        # IF NOTHING IS PASSED IN THE PROMPT, IT WILL DEFAULT TO THIS
+        # THE RESULTS ARE SUB PAR IMO, REMEMBER TO CHANGE THIS LATER TO SOMETHING BETTER
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         prompt = request.json.get('prompt', 'a refined digital painting of this sketch, with a white background')
         
-        # Generate refined artwork
         with torch.inference_mode():
             output = controlnet_pipe(
                 prompt=prompt,
@@ -182,7 +200,6 @@ def refine_artwork():
                 guidance_scale=7.5
             )
         
-        # Convert the output image to base64
         refined_image = output.images[0]
         refined_image_b64 = image_to_base64(refined_image)
         

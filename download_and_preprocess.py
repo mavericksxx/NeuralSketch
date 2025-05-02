@@ -7,12 +7,14 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
 
-# Categories to download
+# download quickdraw numpy data for select categories
+# downloaded all categories with [...] : quickdraw docs
+# remember to start from 10 categories and keep bumping it up to by incremements of like 10ish? 
+# all 350ish categories might not really be feasible to train on my gpu
+# trial and error
+# https://quickdraw.withgoogle.com/data
 DEFAULT_CATEGORIES = ["cloud", "airplane", "butterfly", "door", "clock", "moon", "star", "mushroom", "light bulb", "flower"]
 def download_data(categories, data_dir="quickdraw_data"):
-    """
-    Download the QuickDraw numpy bitmap data for the given categories
-    """
     print(f"Downloading data to {data_dir}...")
     os.makedirs(data_dir, exist_ok=True)
     
@@ -20,21 +22,16 @@ def download_data(categories, data_dir="quickdraw_data"):
         url = f"https://storage.googleapis.com/quickdraw_dataset/full/numpy_bitmap/{category}.npy"
         output_path = os.path.join(data_dir, f"{category}.npy")
         
-        # Skip if file already exists
         if os.path.exists(output_path):
             print(f"File {output_path} already exists. Skipping download.")
             continue
         
         print(f"Downloading {category} dataset...")
         try:
-            # Using requests instead of wget
             response = requests.get(url, stream=True)
-            response.raise_for_status()  # Raise an error for bad responses
-            
-            # Get file size for progress bar
+            response.raise_for_status()  
             file_size = int(response.headers.get('content-length', 0))
             
-            # Download with progress bar
             with open(output_path, 'wb') as f, tqdm(
                 desc=category,
                 total=file_size,
@@ -49,56 +46,46 @@ def download_data(categories, data_dir="quickdraw_data"):
         except Exception as e:
             print(f"Failed to download {category} dataset: {str(e)}")
 
+# script to convert .npy files to images (quickdraw data is stored as numpy arrays)
+# and we need to convert them to images for training
+# create test (20%) and train (80%) directories for each category and save images here
+# also resize images to 224x224 for efficientnet input size (canvas input size is 28x28)
 def npy_to_images(categories, data_dir="quickdraw_data", output_dir="quickdraw_images", samples_per_class=5000):
-    """
-    Convert the .npy files to individual image files
-    """
+
     print(f"Converting .npy files to images...")
-    # Create train and test directories for each category
     os.makedirs(os.path.join(output_dir, "train"), exist_ok=True)
     os.makedirs(os.path.join(output_dir, "test"), exist_ok=True)
     
-    # Handle PIL resizing method compatibility
     try:
-        # For newer Pillow versions (9.0.0+)
         resize_method = Image.Resampling.LANCZOS
     except AttributeError:
-        # For older Pillow versions
         resize_method = Image.LANCZOS
     
     for category in categories:
         print(f"Processing {category}...")
         try:
-            # Load the numpy bitmap data
             npy_file = os.path.join(data_dir, f"{category}.npy")
             data = np.load(npy_file)
             
-            # Take a subset of the data
             if len(data) > samples_per_class:
                 data = data[:samples_per_class]
             
-            # Split into train (80%) and test (20%) sets
             train_size = int(0.8 * len(data))
             train_data = data[:train_size]
             test_data = data[train_size:]
-            
-            # Create category directories
+
             train_category_dir = os.path.join(output_dir, "train", category)
             test_category_dir = os.path.join(output_dir, "test", category)
             os.makedirs(train_category_dir, exist_ok=True)
             os.makedirs(test_category_dir, exist_ok=True)
             
-            # Save train images
             for i, img_data in enumerate(tqdm(train_data, desc=f"Train {category}")):
                 img = Image.fromarray(img_data.reshape(28, 28).astype(np.uint8))
-                # Convert to RGB and resize to 224x224 (EfficientNet input size)
                 img = img.convert("RGB").resize((224, 224), resize_method)
                 img.save(os.path.join(train_category_dir, f"{i}.png"))
             
-            # Save test images
             for i, img_data in enumerate(tqdm(test_data, desc=f"Test {category}")):
                 img = Image.fromarray(img_data.reshape(28, 28).astype(np.uint8))
-                # Convert to RGB and resize to 224x224 (EfficientNet input size)
                 img = img.convert("RGB").resize((224, 224), resize_method)
                 img.save(os.path.join(test_category_dir, f"{i}.png"))
                 
@@ -108,13 +95,10 @@ def npy_to_images(categories, data_dir="quickdraw_data", output_dir="quickdraw_i
     print("Image conversion complete!")
 
 def visualize_samples(categories, data_dir="quickdraw_data", num_samples=5):
-    """
-    Visualize a few samples from each category
-    """
+
     plt.figure(figsize=(10, len(categories)*2))
     
     for i, category in enumerate(categories):
-        # Load the numpy bitmap data
         npy_file = os.path.join(data_dir, f"{category}.npy")
         try:
             data = np.load(npy_file)

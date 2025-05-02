@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os
 import argparse
 import numpy as np
@@ -19,9 +18,10 @@ def get_class_names(data_dir="quickdraw_images/train"):
 
 def prepare_dataloaders(data_dir="quickdraw_images", batch_size=32, val_split=0.1):
     """Prepare train, validation and test dataloaders"""
-    # Define transformations
-    # The AutoImageProcessor will handle most of the preprocessing,
-    # but we need basic transforms for data augmentation
+    # define transformations
+    # autoimageprocessor will handle most of the preprocessing
+    # but we need basic transforms for data augmentation 
+    # this is done to prevent overfitting and improve generalization to the test set
     train_transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(10),
@@ -32,43 +32,35 @@ def prepare_dataloaders(data_dir="quickdraw_images", batch_size=32, val_split=0.
         transforms.ToTensor(),
     ])
     
-    # Load datasets
     train_dataset = datasets.ImageFolder(os.path.join(data_dir, "train"), transform=train_transform)
     test_dataset = datasets.ImageFolder(os.path.join(data_dir, "test"), transform=test_transform)
     
-    # Create validation split
     val_size = int(len(train_dataset) * val_split)
     train_size = len(train_dataset) - val_size
     train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
     
-    # Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=4)
     
     return train_loader, val_loader, test_loader, train_dataset.dataset.classes
 
+# model training script with early stopping (3 epochs) and saving the best model at root/model
 def train_model(model, train_loader, val_loader, device, num_epochs=5, learning_rate=1e-4):
-    """Train the model"""
-    # Define loss function and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     
-    # For tracking metrics
     train_losses = []
     val_losses = []
     train_accuracies = []
     val_accuracies = []
     
-    # For early stopping and model saving
     best_val_loss = float('inf')
     best_model_state = None
     patience = 3
     patience_counter = 0
     
-    # Training loop
     for epoch in range(num_epochs):
-        # Training phase
         model.train()
         train_loss = 0.0
         train_correct = 0
@@ -77,18 +69,14 @@ def train_model(model, train_loader, val_loader, device, num_epochs=5, learning_
         for inputs, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs} [Train]"):
             inputs, labels = inputs.to(device), labels.to(device)
             
-            # Zero the parameter gradients
             optimizer.zero_grad()
             
-            # Forward pass
             outputs = model(inputs).logits
             loss = criterion(outputs, labels)
-            
-            # Backward pass and optimize
+
             loss.backward()
             optimizer.step()
             
-            # Statistics
             train_loss += loss.item() * inputs.size(0)
             _, predicted = torch.max(outputs.data, 1)
             train_total += labels.size(0)
@@ -99,7 +87,6 @@ def train_model(model, train_loader, val_loader, device, num_epochs=5, learning_
         train_losses.append(train_loss)
         train_accuracies.append(train_acc)
         
-        # Validation phase
         model.eval()
         val_loss = 0.0
         val_correct = 0
@@ -109,11 +96,9 @@ def train_model(model, train_loader, val_loader, device, num_epochs=5, learning_
             for inputs, labels in tqdm(val_loader, desc=f"Epoch {epoch+1}/{num_epochs} [Val]"):
                 inputs, labels = inputs.to(device), labels.to(device)
                 
-                # Forward pass
                 outputs = model(inputs).logits
                 loss = criterion(outputs, labels)
                 
-                # Statistics
                 val_loss += loss.item() * inputs.size(0)
                 _, predicted = torch.max(outputs.data, 1)
                 val_total += labels.size(0)
@@ -128,7 +113,6 @@ def train_model(model, train_loader, val_loader, device, num_epochs=5, learning_
               f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, "
               f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
         
-        # Save best model
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_model_state = model.state_dict().copy()
@@ -140,12 +124,11 @@ def train_model(model, train_loader, val_loader, device, num_epochs=5, learning_
                 print(f"\nEarly stopping triggered after {epoch + 1} epochs!")
                 break
     
-    # Load best model state
     if best_model_state is not None:
         model.load_state_dict(best_model_state)
         print(f"\nLoaded best model with validation loss: {best_val_loss:.4f}")
     
-    # Plot training curves
+    # plotting training curves with matplotlib and saving them to root as training_curves.png
     plt.figure(figsize=(12, 5))
     plt.subplot(1, 2, 1)
     plt.plot(train_losses, label='Train Loss')
@@ -168,7 +151,6 @@ def train_model(model, train_loader, val_loader, device, num_epochs=5, learning_
     return model
 
 def evaluate_model(model, test_loader, device, class_names):
-    """Evaluate the model on test data"""
     model.eval()
     correct = 0
     total = 0
@@ -193,14 +175,11 @@ def evaluate_model(model, test_loader, device, class_names):
     return accuracy
 
 def save_model(model, processor, class_names, output_dir="model"):
-    """Save the model and processor for inference"""
     os.makedirs(output_dir, exist_ok=True)
     
-    # Save the model
     model.save_pretrained(output_dir)
     processor.save_pretrained(output_dir)
     
-    # Save class names
     with open(os.path.join(output_dir, "class_names.txt"), "w") as f:
         for class_name in class_names:
             f.write(f"{class_name}\n")
@@ -222,7 +201,8 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Check for available devices (CUDA, MPS, or CPU)
+    # check for available device (GPU or CPU)
+    # i wanted to be able to work both on my mac and my windows laptop so i added support for MPS and CUDA
     if torch.backends.mps.is_available():
         device = torch.device("mps")
         print("Using Apple Silicon GPU (MPS)")
@@ -233,12 +213,10 @@ if __name__ == "__main__":
         device = torch.device("cpu")
         print("Using CPU")
     
-    # Get class names
     class_names = get_class_names(os.path.join(args.data_dir, "train"))
     num_classes = len(class_names)
     print(f"Found {num_classes} classes: {class_names}")
-    
-    # Load the EfficientNet model and processor
+
     model_name = "google/efficientnet-b0"
     processor = AutoImageProcessor.from_pretrained(model_name)
     model = EfficientNetForImageClassification.from_pretrained(
@@ -248,18 +226,15 @@ if __name__ == "__main__":
     )
     model.to(device)
     
-    # Prepare dataloaders
     train_loader, val_loader, test_loader, class_names = prepare_dataloaders(
         data_dir=args.data_dir,
         batch_size=args.batch_size
     )
     
-    # Print dataset sizes
     print(f"Train dataset size: {len(train_loader.dataset)}")
     print(f"Validation dataset size: {len(val_loader.dataset)}")
     print(f"Test dataset size: {len(test_loader.dataset)}")
     
-    # Train the model
     model = train_model(
         model=model,
         train_loader=train_loader,
@@ -269,8 +244,6 @@ if __name__ == "__main__":
         learning_rate=args.learning_rate
     )
     
-    # Evaluate on test data
     evaluate_model(model, test_loader, device, class_names)
     
-    # Save the model
     save_model(model, processor, class_names, args.output_dir)

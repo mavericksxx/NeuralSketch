@@ -92,7 +92,7 @@
         }
 
         canvas {
-            background-color: white;
+            background-color: black;
             border: 3px solid var(--accent-color);
             border-radius: 15px;
             cursor: crosshair;
@@ -234,8 +234,8 @@
         
         <div class="instructions">
             <p>🎨</p>
-            <p>Draw something from these categories: cat, dog, car, airplane, banana, house, flower, tree, umbrella</p>
-            <p>✨ Click "Refine Artwork" to transform your sketch into a digital painting! ✨</p>
+            <p>Draw something from these categories: apple, book, bowtie, candle, cloud, cup, door, envelope, eyeglasses, guitar, hammer, hat, ice cream, leaf, scissors, star, t-shirt, pants, lightning, tree</p>
+            <p>Click "Refine Artwork" to transform your sketch into a digital painting</p>
         </div>
         
         <div class="container">
@@ -244,7 +244,7 @@
                 <input type="text" class="prompt-input" id="promptInput" placeholder="Enter a prompt to guide the artwork refinement (optional)">
                 <div class="controls">
                     <button id="clearButton">Clear Canvas</button>
-                    <button id="recognizeButton">Recognize Drawing</button>
+                    <button id="recognizeButton">Identify Sketch</button>
                     <button id="refineButton">Refine Artwork</button>
                 </div>
             </div>
@@ -288,15 +288,19 @@
                 
                 let isDrawing = false;
                 
-                // Canvas setup
-                ctx.lineWidth = 15;
+                // Canvas setup - exactly matching QuickDraw-master
+                ctx.lineWidth = 5;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                ctx.strokeStyle = 'black';
+                ctx.strokeStyle = 'white';
                 
-                // Set white background for the canvas
-                ctx.fillStyle = 'white';
+                // Set black background for the canvas
+                ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Improve line smoothness with these settings
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
                 
                 // Drawing event listeners
                 canvas.addEventListener('mousedown', startDrawing);
@@ -361,7 +365,7 @@
                 }
                 
                 function clearCanvas() {
-                    ctx.fillStyle = 'white';
+                    ctx.fillStyle = 'black';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     predictionsDiv.innerHTML = '<p>Draw something and click "Recognize Drawing" to see predictions.</p>';
                 }
@@ -371,7 +375,7 @@
                     loadingDiv.style.display = 'block';
                     predictionsDiv.style.display = 'none';
                     
-                    // Get the canvas image as data URL
+                    // Get the canvas image as data URL - no need to invert colors as backend handles it
                     const imageData = canvas.toDataURL('image/png');
                     
                     // Send to server for prediction
@@ -462,3 +466,4 @@
     </div>
 </body>
 </html>
+``` 
