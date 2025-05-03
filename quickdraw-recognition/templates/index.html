@@ -260,27 +260,24 @@
                         <button id="recognizeButton">Identify Sketch</button>
                         <button id="refineButton">Refine Artwork</button>
                     </div>
-                </div>
-                
-                <div class="prediction-container">
-                    <h2>Predictions</h2>
+                    
                     <div class="loading" id="loading">
                         <div class="spinner"></div>
                         <p>Analyzing your drawing...</p>
                     </div>
-                    <div id="predictions">
-                        <p>Draw something and click "Recognize Drawing" to see predictions.</p>
+                    
+                    <div class="prediction-container" id="predictions">
+                        <p>Draw something and click "Identify Sketch" to see predictions.</p>
                     </div>
                 </div>
-            </div>
-
-            <div class="refined-artwork" id="refinedArtwork" style="display: none;">
-                <h2>Refined Artwork</h2>
-                <div class="loading" id="refineLoading">
-                    <div class="spinner"></div>
-                    <p>Generating refined artwork...</p>
+                
+                <div class="refined-artwork" id="refinedArtwork">
+                    <div class="loading" id="refineLoading">
+                        <div class="spinner"></div>
+                        <p>Generating refined artwork...</p>
+                    </div>
+                    <img id="refinedImage" style="display: none;">
                 </div>
-                <img id="refinedImage" style="display: none;">
             </div>
         </div>
 
