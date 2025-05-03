@@ -74,6 +74,17 @@
             justify-content: center;
             gap: 40px;
             margin-bottom: 40px;
+            align-items: flex-start;
+        }
+
+        .main-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: nowrap;
+            margin-bottom: 40px;
+            width: 100%;
+            align-items: flex-start;
         }
 
         .canvas-container {
@@ -85,6 +96,7 @@
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease;
+            flex: 1;
         }
 
         .canvas-container:hover {
@@ -238,30 +250,30 @@
             <p>Click "Refine Artwork" to transform your sketch into a digital painting</p>
         </div>
         
-        <div class="container">
-            <div class="canvas-container">
-                <canvas id="drawingCanvas" width="400" height="400"></canvas>
-                <input type="text" class="prompt-input" id="promptInput" placeholder="Enter a prompt to guide the artwork refinement (optional)">
-                <div class="controls">
-                    <button id="clearButton">Clear Canvas</button>
-                    <button id="recognizeButton">Identify Sketch</button>
-                    <button id="refineButton">Refine Artwork</button>
+        <div class="main-container">
+            <div class="container">
+                <div class="canvas-container">
+                    <canvas id="drawingCanvas" width="400" height="400"></canvas>
+                    <input type="text" class="prompt-input" id="promptInput" placeholder="Enter a prompt to guide the artwork refinement (optional)">
+                    <div class="controls">
+                        <button id="clearButton">Clear Canvas</button>
+                        <button id="recognizeButton">Identify Sketch</button>
+                        <button id="refineButton">Refine Artwork</button>
+                    </div>
+                </div>
+                
+                <div class="prediction-container">
+                    <h2>Predictions</h2>
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                        <p>Analyzing your drawing...</p>
+                    </div>
+                    <div id="predictions">
+                        <p>Draw something and click "Recognize Drawing" to see predictions.</p>
+                    </div>
                 </div>
             </div>
-            
-            <div class="prediction-container">
-                <h2>Predictions</h2>
-                <div class="loading" id="loading">
-                    <div class="spinner"></div>
-                    <p>Analyzing your drawing...</p>
-                </div>
-                <div id="predictions">
-                    <p>Draw something and click "Recognize Drawing" to see predictions.</p>
-                </div>
-            </div>
-        </div>
 
-        <div class="container">
             <div class="refined-artwork" id="refinedArtwork" style="display: none;">
                 <h2>Refined Artwork</h2>
                 <div class="loading" id="refineLoading">
@@ -466,4 +478,3 @@
     </div>
 </body>
 </html>
-``` 

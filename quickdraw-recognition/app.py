@@ -190,7 +190,7 @@ def refine_artwork():
         # THE RESULTS ARE SUB PAR IMO, REMEMBER TO CHANGE THIS LATER TO SOMETHING BETTER
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        prompt = request.json.get('prompt', 'a refined digital painting of this sketch, with a white background')
+        prompt = request.json.get('prompt', 'a refined digital painting of this drawing')
         
         with torch.inference_mode():
             output = controlnet_pipe(
