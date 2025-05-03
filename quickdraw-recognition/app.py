@@ -184,13 +184,14 @@ def refine_artwork():
         
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # TO-DO:
+        # UNSURE IF I WANT TO KEEP THIS :(
         # HERE IS THE DEFAULT SYSTEM PROMPT FED TO THE CONTROLNET PIPELINE
         # THIS CAN BE CHANGED BY THE USER IN THE FRONTEND
         # IF NOTHING IS PASSED IN THE PROMPT, IT WILL DEFAULT TO THIS
         # THE RESULTS ARE SUB PAR IMO, REMEMBER TO CHANGE THIS LATER TO SOMETHING BETTER
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        prompt = request.json.get('prompt', 'a refined digital painting of this drawing')
+        prompt = request.json.get('prompt', 'a highly detailed digital art masterpiece of this drawing, professional quality, perfect lighting, vibrant colors, smooth lines, artistic composition, trending on artstation, 4k resolution, professional digital illustration')
         
         with torch.inference_mode():
             output = controlnet_pipe(
