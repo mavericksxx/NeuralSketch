@@ -13,6 +13,7 @@ import argparse
 # all 350ish categories might not really be feasible to train on my gpu
 # trial and error
 # https://quickdraw.withgoogle.com/data
+
 DEFAULT_CATEGORIES = ["cloud", "airplane", "butterfly", "door", "clock", "moon", "star", "mushroom", "light bulb", "flower"]
 def download_data(categories, data_dir="quickdraw_data"):
     print(f"Downloading data to {data_dir}...")
@@ -50,6 +51,7 @@ def download_data(categories, data_dir="quickdraw_data"):
 # and we need to convert them to images for training
 # create test (20%) and train (80%) directories for each category and save images here
 # also resize images to 224x224 for efficientnet input size (canvas input size is 28x28)
+
 def npy_to_images(categories, data_dir="quickdraw_data", output_dir="quickdraw_images", samples_per_class=5000):
 
     print(f"Converting .npy files to images...")

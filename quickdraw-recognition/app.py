@@ -48,7 +48,7 @@ def process_image_for_model(image_data):
     
 
     ys, xs = np.nonzero(image)
-    if len(ys) == 0 or len(xs) == 0:  # Empty image
+    if len(ys) == 0 or len(xs) == 0:  
         return None
         
     min_y, max_y = np.min(ys), np.max(ys)
@@ -72,9 +72,11 @@ def load_quickdraw_model():
         
         model = QuickDraw(num_classes=20)
 
-        # i know both the statements are the same, but for some reason the model wouldnt load without having an else CPU statement 
+        # i know both the statements are the same, but for some reason the model 
+        # wouldnt load without having an else CPU statement 
         # even though im loading it onto the gpu ...
-        
+        # https://stackoverflow.com/questions/57238344/i-have-a-gpu-and-cuda-installed-in-windows-10-but-pytorchs-torch-cuda-is-available
+
         if torch.cuda.is_available():
             state_dict = torch.load(MODEL_PATH, map_location='cuda:0', weights_only=False)
         else:
@@ -183,8 +185,8 @@ def refine_artwork():
         sketch = image.convert("L").resize((512, 512))
         
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # TO-DO:
-        # UNSURE IF I WANT TO KEEP THIS :(
+        # TO-DO: done
+        # UNSURE IF I WANT TO KEEP THIS 
         # HERE IS THE DEFAULT SYSTEM PROMPT FED TO THE CONTROLNET PIPELINE
         # THIS CAN BE CHANGED BY THE USER IN THE FRONTEND
         # IF NOTHING IS PASSED IN THE PROMPT, IT WILL DEFAULT TO THIS

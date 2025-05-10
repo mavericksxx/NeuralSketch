@@ -297,32 +297,26 @@
                 
                 let isDrawing = false;
                 
-                // Canvas setup - exactly matching QuickDraw-master
                 ctx.lineWidth = 5;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 ctx.strokeStyle = 'white';
-                
-                // Set black background for the canvas
+
                 ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
-                // Improve line smoothness with these settings
                 ctx.imageSmoothingEnabled = true;
                 ctx.imageSmoothingQuality = 'high';
                 
-                // Drawing event listeners
                 canvas.addEventListener('mousedown', startDrawing);
                 canvas.addEventListener('mousemove', draw);
                 canvas.addEventListener('mouseup', stopDrawing);
                 canvas.addEventListener('mouseout', stopDrawing);
                 
-                // Touch support
                 canvas.addEventListener('touchstart', handleTouch);
                 canvas.addEventListener('touchmove', handleTouch);
                 canvas.addEventListener('touchend', stopDrawing);
                 
-                // Button event listeners
                 clearButton.addEventListener('click', clearCanvas);
                 recognizeButton.addEventListener('click', recognizeDrawing);
                 refineButton.addEventListener('click', refineArtwork);
@@ -335,7 +329,6 @@
                 function draw(e) {
                     if (!isDrawing) return;
                     
-                    // Get mouse/touch position
                     const x = e.clientX - canvas.getBoundingClientRect().left;
                     const y = e.clientY - canvas.getBoundingClientRect().top;
                     
@@ -380,14 +373,11 @@
                 }
                 
                 function recognizeDrawing() {
-                    // Show loading indicator
                     loadingDiv.style.display = 'block';
                     predictionsDiv.style.display = 'none';
                     
-                    // Get the canvas image as data URL - no need to invert colors as backend handles it
                     const imageData = canvas.toDataURL('image/png');
-                    
-                    // Send to server for prediction
+
                     fetch('/predict', {
                         method: 'POST',
                         headers: {
@@ -397,7 +387,6 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        // Hide loading indicator
                         loadingDiv.style.display = 'none';
                         predictionsDiv.style.display = 'block';
                         
@@ -406,7 +395,6 @@
                             return;
                         }
                         
-                        // Display predictions
                         let html = '';
                         
                         data.top_predictions.forEach(pred => {
@@ -432,15 +420,12 @@
                 }
 
                 function refineArtwork() {
-                    // Show the refined artwork section and loading indicator
                     refinedArtwork.style.display = 'block';
                     refineLoading.style.display = 'block';
                     refinedImage.style.display = 'none';
                     
-                    // Get the canvas image data
                     const imageData = canvas.toDataURL('image/png');
                     
-                    // Send to server for refinement
                     fetch('/refine', {
                         method: 'POST',
                         headers: {
@@ -448,12 +433,11 @@
                         },
                         body: JSON.stringify({ 
                             image: imageData,
-                            prompt: promptInput.value || undefined  // Only send if not empty
+                            prompt: promptInput.value || undefined  
                         })
                     })
                     .then(response => response.json())
                     .then(data => {
-                        // Hide loading indicator
                         refineLoading.style.display = 'none';
                         
                         if (data.error) {
@@ -461,7 +445,6 @@
                             return;
                         }
                         
-                        // Display the refined artwork
                         refinedImage.src = data.refined_image;
                         refinedImage.style.display = 'block';
                     })
