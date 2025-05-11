@@ -38,8 +38,8 @@ FOR epoch in range(num_epochs):
     END FOR
 END FOR
 
-# Webapp with inference pipeline
-START web server (Flask or Streamlit)
+# Webapp with inference pipeline (Pseudocode)
+START Flask web server 
 
 ON user drawing submission:
     GET sketch image from web canvas
