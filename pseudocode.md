@@ -1,11 +1,11 @@
-# Data Preparation
+# Data Preparation (Pseudocode)
 FOR each category in selected_categories:
     LOAD all sketch images for category
     PREPROCESS images (resize, normalize, convert to grayscale if needed)
     SPLIT images into training and validation sets
 END FOR
 
-# Model Training (EfficientNet-B0)
+# EfficientNet-B0 Model Training (Pseudocode)
 INITIALIZE EfficientNet-B0 model (pretrained on ImageNet)
 REPLACE final layer with new layer for num_categories
 
@@ -27,7 +27,7 @@ FOR epoch in range(num_epochs):
     END IF
 END FOR
 
-# Model Training (ControlNet)
+# ControlNet Model Training (Pseudocode)
 INITIALIZE ControlNet model (pretrained weights)
 FOR epoch in range(num_epochs):
     FOR each batch in training set:
@@ -59,7 +59,7 @@ ON user drawing submission:
         RESET canvas
 END ON
 
-# Visualization and Evaluation
+# Visualization and Evaluation (Pseudocode)
 FOR each epoch:
     RECORD training and validation loss/accuracy
 
