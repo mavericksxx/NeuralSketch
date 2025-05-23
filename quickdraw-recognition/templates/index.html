@@ -3,17 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeuralSketch - Artwork Refinement</title>
+    <title>NeuralSketch</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #7843E6;
-            --secondary-color: #FF6B6B;
-            --accent-color: #43E6D5;
-            --bg-color: #FAFAFA;
-            --text-color: #2C3E50;
+            --sketch-black: #1a1a1a;
+            --sketch-charcoal: #2c2c2c;
+            --sketch-graphite: #4a4a4a;
+            --sketch-paper: #f8f6f0;
+            --sketch-cream: #faf8f3;
+            --sketch-blue: #4a6cf7;
+            --sketch-purple: #9333ea;
+            --sketch-orange: #f59e0b;
+            --sketch-red: #ef4444;
+            --sketch-green: #10b981;
+            --paper-texture: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter></defs><rect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.03"/></svg>');
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
@@ -21,234 +31,666 @@
             line-height: 1.6;
             margin: 0;
             padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(120, 67, 230, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 90% 80%, rgba(67, 230, 213, 0.05) 0%, transparent 50%);
+            background: var(--sketch-paper);
+            background-image: var(--paper-texture);
+            color: var(--sketch-charcoal);
             min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(74, 108, 247, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(147, 51, 234, 0.08) 0%, transparent 50%),
+                linear-gradient(135deg, transparent 0%, rgba(245, 158, 11, 0.05) 50%, transparent 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Sketch-style doodle decorations */
+        .sketch-doodle {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .sketch-doodle::before {
+            content: '';
+            position: absolute;
+            border: 2px solid var(--sketch-charcoal);
+            border-radius: 50%;
+        }
+
+        .doodle-1 {
+            top: 10%;
+            left: 5%;
+            width: 60px;
+            height: 60px;
+            border: 2px dashed var(--sketch-graphite);
+            border-radius: 50%;
+            transform: rotate(15deg);
+        }
+
+        .doodle-2 {
+            top: 20%;
+            right: 10%;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--sketch-graphite);
+            transform: rotate(-20deg);
+        }
+
+        .doodle-3 {
+            bottom: 15%;
+            left: 8%;
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 30px solid var(--sketch-graphite);
+            transform: rotate(30deg);
         }
 
         .page-wrapper {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         h1 {
             font-family: 'Playfair Display', serif;
-            font-size: 3.5rem;
+            font-size: clamp(2.5rem, 5vw, 4rem);
             text-align: center;
-            margin-bottom: 30px;
-            color: var(--primary-color);
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+            color: var(--sketch-black);
             position: relative;
+            font-weight: 700;
+            letter-spacing: -1px;
         }
 
         h1::after {
             content: '';
-            display: block;
-            width: 100px;
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
             height: 3px;
-            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
-            margin: 15px auto;
+            background: linear-gradient(90deg, var(--sketch-blue), var(--sketch-purple), var(--sketch-orange));
             border-radius: 2px;
+        }
+
+        /* Hand-drawn underline effect */
+        h1::before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-1deg);
+            width: 140px;
+            height: 2px;
+            background: var(--sketch-charcoal);
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--sketch-graphite);
+            margin-bottom: 40px;
+            font-weight: 400;
+            font-style: italic;
         }
 
         .instructions {
             text-align: center;
-            margin-bottom: 40px;
-            color: var(--text-color);
-            max-width: 800px;
-            margin: 0 auto 40px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            margin-bottom: 50px;
+            color: var(--sketch-charcoal);
+            max-width: 900px;
+            margin: 0 auto 50px;
+            padding: 35px;
+            background: var(--sketch-cream);
+            border-radius: 20px;
+            border: 3px solid var(--sketch-charcoal);
+            box-shadow: 
+                8px 8px 0px var(--sketch-charcoal),
+                0 0 0 1px var(--sketch-charcoal);
+            position: relative;
+            transform: rotate(-0.5deg);
+        }
+
+        .instructions::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: var(--sketch-cream);
+            border: 3px solid var(--sketch-charcoal);
+            border-radius: 50%;
+            transform: rotate(15deg);
+        }
+
+        .instructions::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            right: 30px;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 20px solid var(--sketch-orange);
+            transform: rotate(-10deg);
+        }
+
+        .instructions .emoji {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+            filter: drop-shadow(2px 2px 0px var(--sketch-charcoal));
+        }
+
+        .instructions p {
+            margin: 15px 0;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+
+        .instructions p:first-of-type {
+            font-weight: 600;
+            color: var(--sketch-black);
+            font-size: 1.3rem;
         }
 
         .container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 40px;
-            margin-bottom: 40px;
-            align-items: flex-start;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 50px;
+            align-items: stretch;
         }
 
         .main-container {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            flex-wrap: nowrap;
-            margin-bottom: 40px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
             width: 100%;
-            align-items: flex-start;
         }
 
         .canvas-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-            flex: 1;
+            background: var(--sketch-cream);
+            padding: 40px;
+            border-radius: 15px;
+            border: 4px solid var(--sketch-charcoal);
+            box-shadow: 
+                10px 10px 0px var(--sketch-charcoal),
+                0 0 0 1px var(--sketch-charcoal);
+            transition: all 0.3s ease;
+            position: relative;
+            transform: rotate(0.5deg);
+            height: 100%;
+            min-height: 600px;
         }
 
         .canvas-container:hover {
-            transform: translateY(-5px);
+            transform: rotate(0deg) translateY(-5px);
+            box-shadow: 
+                12px 12px 0px var(--sketch-charcoal),
+                0 0 0 1px var(--sketch-charcoal);
+        }
+
+        /* Sketch-style corner decorations */
+        .canvas-container::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 20px;
+            height: 20px;
+            border-left: 3px solid var(--sketch-blue);
+            border-top: 3px solid var(--sketch-blue);
+        }
+
+        .canvas-container::after {
+            content: '';
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            width: 20px;
+            height: 20px;
+            border-right: 3px solid var(--sketch-purple);
+            border-bottom: 3px solid var(--sketch-purple);
         }
 
         canvas {
-            background-color: black;
-            border: 3px solid var(--accent-color);
-            border-radius: 15px;
+            background-color: #000;
+            border: 4px solid var(--sketch-charcoal);
+            border-radius: 10px;
             cursor: crosshair;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+            box-shadow: 
+                inset 0 0 0 2px var(--sketch-cream),
+                0 6px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        canvas:hover {
+            box-shadow: 
+                inset 0 0 0 2px var(--sketch-cream),
+                0 8px 20px rgba(0, 0, 0, 0.3);
         }
 
         .controls {
             display: flex;
             gap: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         button {
-            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            font-size: 16px;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Poppins', sans-serif;
+            background: var(--sketch-cream);
+            color: var(--sketch-charcoal);
+            border: 3px solid var(--sketch-charcoal);
+            padding: 12px 24px;
+            font-size: 14px;
             font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Poppins', sans-serif;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.5px;
+            box-shadow: 4px 4px 0px var(--sketch-charcoal);
+            position: relative;
+            transform: rotate(-1deg);
         }
 
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            transform: rotate(0deg) translateY(-2px);
+            box-shadow: 6px 6px 0px var(--sketch-charcoal);
+        }
+
+        button:active {
+            transform: rotate(0deg) translateY(0px);
+            box-shadow: 2px 2px 0px var(--sketch-charcoal);
+        }
+
+        button#clearButton {
+            background: linear-gradient(135deg, #ffebee, #fff3e0);
+            color: var(--sketch-red);
+            border-color: var(--sketch-red);
+            box-shadow: 4px 4px 0px var(--sketch-red);
+        }
+
+        button#clearButton:hover {
+            box-shadow: 6px 6px 0px var(--sketch-red);
+        }
+
+        button#clearButton:active {
+            box-shadow: 2px 2px 0px var(--sketch-red);
+        }
+
+        button#recognizeButton {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            color: var(--sketch-blue);
+            border-color: var(--sketch-blue);
+            box-shadow: 4px 4px 0px var(--sketch-blue);
+        }
+
+        button#recognizeButton:hover {
+            box-shadow: 6px 6px 0px var(--sketch-blue);
+        }
+
+        button#recognizeButton:active {
+            box-shadow: 2px 2px 0px var(--sketch-blue);
+        }
+
+        button#refineButton {
+            background: linear-gradient(135deg, #f1f8e9, #fff8e1);
+            color: var(--sketch-green);
+            border-color: var(--sketch-green);
+            box-shadow: 4px 4px 0px var(--sketch-green);
+        }
+
+        button#refineButton:hover {
+            box-shadow: 6px 6px 0px var(--sketch-green);
+        }
+
+        button#refineButton:active {
+            box-shadow: 2px 2px 0px var(--sketch-green);
         }
 
         .prediction-container, .refined-artwork {
-            padding: 30px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            min-width: 300px;
-            transition: transform 0.3s ease;
+            padding: 40px;
+            background: var(--sketch-cream);
+            border-radius: 15px;
+            border: 4px solid var(--sketch-charcoal);
+            box-shadow: 
+                10px 10px 0px var(--sketch-charcoal),
+                0 0 0 1px var(--sketch-charcoal);
+            min-width: 320px;
+            transition: all 0.3s ease;
+            position: relative;
+            transform: rotate(-0.5deg);
+            height: 100%;
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .prediction-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .prediction-section .prediction-container {
+            margin: 0;
+            flex: 1;
         }
 
         .prediction-container:hover, .refined-artwork:hover {
-            transform: translateY(-5px);
+            transform: rotate(0deg) translateY(-5px);
+            box-shadow: 
+                12px 12px 0px var(--sketch-charcoal),
+                0 0 0 1px var(--sketch-charcoal);
+        }
+
+        /* Sketch-style paper clips */
+        .prediction-container::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: 30px;
+            width: 30px;
+            height: 15px;
+            border: 3px solid var(--sketch-graphite);
+            border-radius: 15px 15px 0 0;
+            background: transparent;
+            transform: rotate(15deg);
+        }
+
+        .refined-artwork::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 25px;
+            width: 25px;
+            height: 25px;
+            background: var(--sketch-orange);
+            border: 3px solid var(--sketch-charcoal);
+            border-radius: 50%;
+            transform: rotate(-10deg);
         }
 
         .prediction-item {
             display: flex;
             justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 2px dashed var(--sketch-graphite);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .prediction-item:hover {
+            padding-left: 10px;
+            background: rgba(74, 108, 247, 0.05);
+            border-radius: 8px;
+            margin: 0 -10px;
+            padding-right: 10px;
+        }
+
+        .prediction-item:last-child {
+            border-bottom: none;
+        }
+
+        .prediction-label {
+            font-weight: 600;
+            color: var(--sketch-black);
+            font-size: 1.1rem;
+            position: relative;
+        }
+
+        .prediction-percentage {
+            font-weight: 700;
+            color: var(--sketch-blue);
+            font-size: 1.1rem;
+            background: var(--sketch-paper);
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 2px solid var(--sketch-blue);
+        }
+
+        .confidence-bar-container {
+            margin-top: 8px;
+            background: var(--sketch-paper);
+            height: 8px;
+            border-radius: 4px;
+            border: 2px solid var(--sketch-charcoal);
+            overflow: hidden;
         }
 
         .confidence-bar {
-            height: 8px;
-            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
-            margin-top: 8px;
-            border-radius: 10px;
-            transition: width 0.6s ease-out;
+            height: 100%;
+            background: linear-gradient(90deg, var(--sketch-blue), var(--sketch-purple));
+            border-radius: 2px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        /* Hand-drawn style animation */
+        .confidence-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 2px,
+                rgba(255,255,255,0.2) 2px,
+                rgba(255,255,255,0.2) 4px
+            );
         }
 
         .loading {
             display: none;
             text-align: center;
-            margin: 20px 0;
+            margin: 30px 0;
+            color: var(--sketch-charcoal);
         }
 
         .spinner {
-            border: 4px solid rgba(120, 67, 230, 0.1);
+            border: 4px solid var(--sketch-paper);
             border-radius: 50%;
-            border-top: 4px solid var(--primary-color);
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            border-top: 4px solid var(--sketch-blue);
+            border-right: 4px solid var(--sketch-purple);
+            width: 50px;
+            height: 50px;
+            animation: sketch-spin 1.5s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes sketch-spin {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(90deg) scale(1.1); }
+            50% { transform: rotate(180deg); }
+            75% { transform: rotate(270deg) scale(0.9); }
+            100% { transform: rotate(360deg); }
         }
 
         .prompt-input {
             width: 100%;
-            padding: 15px;
-            margin: 15px 0;
-            border: 2px solid var(--accent-color);
-            border-radius: 10px;
+            padding: 18px 24px;
+            margin: 25px 0;
+            border: 3px solid var(--sketch-charcoal);
+            border-radius: 12px;
             font-size: 16px;
-            transition: all 0.3s ease;
             font-family: 'Poppins', sans-serif;
+            background: var(--sketch-paper);
+            color: var(--sketch-charcoal);
+            transition: all 0.3s ease;
+            box-shadow: 4px 4px 0px var(--sketch-graphite);
+        }
+
+        .prompt-input::placeholder {
+            color: var(--sketch-graphite);
+            font-style: italic;
         }
 
         .prompt-input:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 10px rgba(120, 67, 230, 0.2);
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            border-color: var(--sketch-blue);
+            box-shadow: 6px 6px 0px var(--sketch-blue);
+            background: var(--sketch-cream);
+            transform: translateY(-2px);
         }
 
         h2 {
             font-family: 'Playfair Display', serif;
-            color: var(--primary-color);
-            margin-bottom: 20px;
+            color: var(--sketch-black);
+            margin-bottom: 25px;
             font-size: 1.8rem;
+            font-weight: 600;
+            position: relative;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: var(--sketch-orange);
+            border-radius: 2px;
+            transform: rotate(-1deg);
         }
 
         #refinedImage {
             max-width: 100%;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            transition: transform 0.3s ease;
+            border: 4px solid var(--sketch-charcoal);
+            box-shadow: 8px 8px 0px var(--sketch-charcoal);
+            transition: all 0.3s ease;
         }
 
         #refinedImage:hover {
-            transform: scale(1.02);
+            transform: rotate(1deg) scale(1.02);
+            box-shadow: 10px 10px 0px var(--sketch-charcoal);
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .page-wrapper {
+                padding: 15px;
+            }
         }
 
         @media (max-width: 768px) {
             .container {
-                flex-direction: column;
-                align-items: center;
+                grid-template-columns: 1fr;
             }
             
             h1 {
                 font-size: 2.5rem;
+                margin-bottom: 20px;
             }
             
             .canvas-container, .prediction-container, .refined-artwork {
-                width: 90%;
+                padding: 25px;
+                margin: 0;
+                width: 100%;
+                transform: rotate(0deg);
             }
+
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            button {
+                width: 100%;
+                max-width: 300px;
+                transform: rotate(0deg);
+            }
+
+            .instructions {
+                padding: 20px;
+                margin-bottom: 30px;
+                transform: rotate(0deg);
+            }
+
+            .doodle-1, .doodle-2, .doodle-3 {
+                display: none;
+            }
+        }
+
+        .loading-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--sketch-charcoal);
+            font-style: italic;
+        }
+
+        /* Sketch-style artistic touches */
+        .artistic-border {
+            position: relative;
+        }
+
+        .artistic-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--sketch-blue), var(--sketch-purple), var(--sketch-orange));
+            z-index: -1;
+            border-radius: inherit;
         }
     </style>
 </head>
 <body>
+    <!-- Sketch-style decorative doodles -->
+    <div class="sketch-doodle doodle-1"></div>
+    <div class="sketch-doodle doodle-2"></div>
+    <div class="sketch-doodle doodle-3"></div>
+    
     <div class="page-wrapper">
         <h1>NeuralSketch Alpha</h1>
+        <p class="subtitle">Sketch Classification and Refinement</p>
         
-        <div class="instructions">
-            <p>🎨</p>
+        <!-- <div class="instructions">
+            <span class="emoji">🎨</span>
+            <p>Transform your sketches into digital masterpieces with AI</p>
             <p>Draw something from these categories: apple, book, bowtie, candle, cloud, cup, door, envelope, eyeglasses, guitar, hammer, hat, ice cream, leaf, scissors, star, t-shirt, pants, lightning, tree</p>
             <p>Click "Refine Artwork" to transform your sketch into a digital painting</p>
-        </div>
+        </div> -->
         
         <div class="main-container">
             <div class="container">
@@ -260,29 +702,34 @@
                         <button id="recognizeButton">Identify Sketch</button>
                         <button id="refineButton">Refine Artwork</button>
                     </div>
-                    
+                </div>
+                
+                <div class="prediction-section">
                     <div class="loading" id="loading">
                         <div class="spinner"></div>
-                        <p>Analyzing your drawing...</p>
+                        <p class="loading-text">Analyzing your drawing...</p>
                     </div>
                     
                     <div class="prediction-container" id="predictions">
+                        <h2>🔍 Recognition Results</h2>
                         <p>Draw something and click "Identify Sketch" to see predictions.</p>
                     </div>
                 </div>
                 
                 <div class="refined-artwork" id="refinedArtwork">
+                    <h2>✨ Enhanced Artwork</h2>
                     <div class="loading" id="refineLoading">
                         <div class="spinner"></div>
-                        <p>Generating refined artwork...</p>
+                        <p class="loading-text">Generating refined artwork...</p>
                     </div>
                     <img id="refinedImage" style="display: none;">
                 </div>
             </div>
         </div>
+    </div>
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
                 const canvas = document.getElementById('drawingCanvas');
                 const ctx = canvas.getContext('2d');
                 const clearButton = document.getElementById('clearButton');
@@ -369,7 +816,7 @@
                 function clearCanvas() {
                     ctx.fillStyle = 'black';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    predictionsDiv.innerHTML = '<p>Draw something and click "Recognize Drawing" to see predictions.</p>';
+                    predictionsDiv.innerHTML = '<h2>🔍 Recognition Results</h2><p>Draw something and click "Identify Sketch" to see predictions.</p>';
                 }
                 
                 function recognizeDrawing() {
@@ -391,21 +838,23 @@
                         predictionsDiv.style.display = 'block';
                         
                         if (data.error) {
-                            predictionsDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                            predictionsDiv.innerHTML = `<h2>🔍 Recognition Results</h2><p>Error: ${data.error}</p>`;
                             return;
                         }
                         
-                        let html = '';
+                        let html = '<h2>🔍 Recognition Results</h2>';
                         
                         data.top_predictions.forEach(pred => {
                             const percentage = (pred.confidence * 100).toFixed(2);
                             html += `
                                 <div class="prediction-item">
                                     <div>
-                                        <strong>${pred.class}</strong>
-                                        <div class="confidence-bar" style="width: ${percentage}%"></div>
+                                        <div class="prediction-label">${pred.class}</div>
+                                        <div class="confidence-bar-container">
+                                            <div class="confidence-bar" style="width: ${percentage}%"></div>
+                                        </div>
                                     </div>
-                                    <div>${percentage}%</div>
+                                    <div class="prediction-percentage">${percentage}%</div>
                                 </div>
                             `;
                         });
@@ -415,7 +864,7 @@
                     .catch(error => {
                         loadingDiv.style.display = 'none';
                         predictionsDiv.style.display = 'block';
-                        predictionsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+                        predictionsDiv.innerHTML = `<h2>🔍 Recognition Results</h2><p>Error: ${error.message}</p>`;
                     });
                 }
 
@@ -450,11 +899,9 @@
                     })
                     .catch(error => {
                         refineLoading.style.display = 'none';
-                        refinedArtwork.innerHTML = `<p>Error: ${error.message}</p>`;
-                    });
-                }
-            });
-        </script>
-    </div>
+                        refinedArtwork.innerHTML = `<p>Error: ${error.message}</p>`;                });
+            }
+        });
+    </script>
 </body>
 </html>
